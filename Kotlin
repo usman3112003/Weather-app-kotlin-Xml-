@@ -1,0 +1,153 @@
+package com.usmanweathertool
+
+import android.app.Activity
+import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import java.text.SimpleDateFormat
+import java.util.*
+import android.widget.TextView
+import java.net.URL
+import java.net.HttpURLConnection
+import kotlin.concurrent.thread
+import org.json.JSONObject
+import android.widget.EditText
+import android.widget.Button
+import android.widget.LinearLayout
+import android.graphics.Color
+
+
+public class MainActivity : Activity() {
+	
+	
+	
+    override fun onCreate(savedInstanceState: Bundle?) {
+         super.onCreate(savedInstanceState)
+         setContentView(R.layout.activity_main)
+		 
+		var textView = findViewById<TextView>(R.id.dayFormat)
+		
+		startClock(textView)
+		
+		
+	var weatherText = findViewById<TextView>(R.id.weatherText)
+	val apiKey = "a18735066f79928010954545a313aabe"
+    var cityName = findViewById<EditText>(R.id.cityName)
+	val getWeather = findViewById<Button>(R.id.getWeather)
+	
+		
+		getWeather.setOnClickListener{
+			if(cityName.text.isNotEmpty()){
+			getWeatherData(cityName.text.toString(),weatherText,apiKey)}else{
+			weatherText.text ="Please Input any City Name"	}
+		}
+		
+		
+		
+		
+		
+    }
+	
+	fun startClock(textView: TextView) {
+    val handler = Handler(Looper.getMainLooper())
+    val runnable = object : Runnable {
+        override fun run() {
+            val currentTime = Calendar.getInstance().time
+            val formatter = SimpleDateFormat("dd-MMMM-yyyy hh:mm:ss a EEEE", Locale.getDefault())
+            textView.text = formatter.format(currentTime)
+            handler.postDelayed(this, 1000)
+        }
+    }
+    handler.post(runnable)
+}
+
+   private fun getWeatherData(city: String, weatherText: TextView,apiKey:String) {
+        thread {
+            val apiUrl = "https://api.openweathermap.org/data/2.5/weather?q=$city&appid=$apiKey&units=metric"
+            val url = URL(apiUrl)
+            val connection = url.openConnection() as HttpURLConnection
+
+            try {
+                val data = connection.inputStream.bufferedReader().readText()
+                val json = JSONObject(data)
+                val main = json.getJSONObject("main")
+                val temp = main.getDouble("temp")
+                val description = json.getJSONArray("weather")
+                    .getJSONObject(0).getString("description")
+
+                val result = "City: $city\nTemp: $temp°C\nCondition: $description"
+
+                runOnUiThread {
+                    weatherText.text = result
+                }
+				
+				
+				
+				runOnUiThread {
+				
+				val iconView = findViewById<TextView>(R.id.weatherIcon)
+val layout = findViewById<LinearLayout>(R.id.main_container)
+
+val lowerDesc = description.lowercase()
+
+when {
+    "clear" in lowerDesc -> {
+        iconView.text = "☀️"
+        layout.setBackgroundColor(Color.parseColor("#FFD700")) // sunny yellow
+    }
+    "cloud" in lowerDesc -> {
+        iconView.text = "☁️"
+        layout.setBackgroundColor(Color.parseColor("#B0C4DE")) // light grey blue
+    }
+    "rain" in lowerDesc -> {
+        iconView.text = "🌧️"
+        layout.setBackgroundColor(Color.parseColor("#708090")) // slate grey
+    }
+    "storm" in lowerDesc || "thunder" in lowerDesc -> {
+        iconView.text = "⛈️"
+        layout.setBackgroundColor(Color.parseColor("#2F4F4F")) // dark slate
+    }
+    "snow" in lowerDesc -> {
+        iconView.text = "❄️"
+        layout.setBackgroundColor(Color.parseColor("#ADD8E6")) // light blue
+    }
+    "mist" in lowerDesc || "fog" in lowerDesc || "haze" in lowerDesc -> {
+        iconView.text = "🌫️"
+        layout.setBackgroundColor(Color.parseColor("#A9A9A9")) // dark gray
+    }
+    "drizzle" in lowerDesc -> {
+        iconView.text = "🌦️"
+        layout.setBackgroundColor(Color.parseColor("#87CEEB")) // sky blue
+    }
+    "wind" in lowerDesc || "breeze" in lowerDesc -> {
+        iconView.text = "💨"
+        layout.setBackgroundColor(Color.parseColor("#A0C8F0")) // wind blue
+    }
+    else -> {
+        iconView.text = "❔"
+        layout.setBackgroundColor(Color.parseColor("#121212")) // default
+    }
+}
+
+         }
+
+
+            } catch (e: Exception) {
+                runOnUiThread {
+                    weatherText.text = "Error: ${e.message}"
+                }
+            } finally {
+                connection.disconnect()
+            }
+        }
+    }
+
+
+
+
+
+
+
+
+
+}
